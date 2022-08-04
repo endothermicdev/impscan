@@ -151,14 +151,8 @@ def impscan(plugin, **kwargs):
         assert (len(kwargs["node"]) == 66)
         node = plugin.rpc.listnodes(kwargs["node"])['nodes'][0]
         return decodeFeatures(node["features"])
-        #return decodeFeatures(node["features"])
     if ("features" in kwargs.keys()):
         return(decodeFeatures(kwargs["features"]))
-        # try:
-        #     f = int(kwargs["features"], 16)
-        #     return decodeFeatures(f)
-        # except:
-        #     return(["feature bit decode failed. (hex encoding required)"])
     #Run analysis on all network nodes
     heuristic_check = {}
     for h in all_heuristics:
@@ -174,28 +168,19 @@ def impscan(plugin, **kwargs):
     for h in all_heuristics:
         result.update({h.name:0})
     result.update({"indef":0,"no features":0})
-    #return result
-    #result = {"test implementation":0,"LND":0,"CLN Experimental":0,"CLN":0,"LDK":0,"Eclair":0,"2200":0,"indef":$
-    featureless = 0
     indefs = []
     for n in nodes:
         c+=1
         if ("features" not in n):
-            featureless += 1
-            continue
-        if(n["features"] == None or n["features"] == ''):
-            # print(n, "is featureless. Skipping.")
-            featureless += 1
             result["no features"] += 1
             continue
-        #if c > 10:
-        #    break
-        #print("{}: {}".format(n["alias"],identifyFingerprint(int(n["features"],16))))
+        if(n["features"] == None or n["features"] == ''):
+            result["no features"] += 1
+            continue
         r = identifyFingerprint(int(n["features"],16))
         if r == "indef":
             indefs.append(n)
         result[r] = result[r] + 1
-    print(result)
     t = 0
     for i in result.keys():
         t += result[i]
