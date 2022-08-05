@@ -15,12 +15,12 @@ lightning-cli impscan
 
 To decode a particular feature_bit field:
 ```bash
-lightning-cli features=<hex encoded features>
+lightning-cli impscan features=<hex encoded features>
 ```
 
 To list the features of a specific nodeid:
 ```bash
-lightning-cli node=<nodeid>
+lightning-cli impscan node=<nodeid>
 ```
 
 Future work:
