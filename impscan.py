@@ -139,7 +139,7 @@ def decodeFeatures(features):
         result.update({"Unknown features":uf})
     return result
 
-def singleNodeDecode(nodeid):
+def queryNodeFeatures(nodeid):
     if (len(str(nodeid)) != 66):
         raise Exception("nodeid must be 33 bytes (66 hex chars)")
     try:
@@ -149,7 +149,30 @@ def singleNodeDecode(nodeid):
             return ("Nodeid not found. Invalid token")
         return("Error encountered during call to listnodes: {}".format(e))
     node = query['nodes'][0]
-    return decodeFeatures(node["features"])
+    return node["features"]
+
+def singleNodeDecode(nodeid):
+    return decodeFeatures(queryNodeFeatures(nodeid))
+
+def testNodes(test_items):
+    """feed a json dict of node_id:heuristic pairs and this will fingerprint
+    the nodes and validate that they match the desired heuristic. A list of
+    nodes from all implementations will validate that all the heuristics
+    remain effective."""
+    if not isinstance(test_items,dict):
+        return """test argument requires a json dict of format '{"node_id":"heuristic"}'"""
+    answer = []
+    for node, h in test_items.items():
+        f = queryNodeFeatures(node)
+        if "Error" in f:
+            return f
+        fingerprint = identifyFingerprint(int(f,16))
+        answer.append({"node_id":node,
+                       "features":f,
+                       "test heuristic":h,
+                       "fingerprint":fingerprint,
+                       "status": fingerprint==h})
+    return answer
 
 def fullScan():
     """Fingerprint all nodes on the network using all heuristics."""
@@ -193,12 +216,14 @@ def impscan(plugin, **kwargs):
     """Estimate breakdown of various lightning implementations on the network.
     This relies on the listnodes command and feature bits. Work in progress."""
     for k in kwargs.keys():
-        if k not in ["node","features","testnodes"]:
+        if k not in ["node","features","test"]:
             return(["unrecognized keyword '{}'".format(k)])
     if ("node" in kwargs.keys()):
         return singleNodeDecode(kwargs["node"])
     if ("features" in kwargs.keys()):
-        return(decodeFeatures(kwargs["features"]))
+        return decodeFeatures(kwargs["features"])
+    if ("test" in kwargs.keys()):
+        return testNodes(kwargs["test"])
     #Run analysis on all network nodes
     return fullScan()
 

@@ -23,6 +23,23 @@ To list the features of a specific nodeid:
 lightning-cli impscan node=<nodeid>
 ```
 
+To test nodes against their intended implementation heuristic:
+```bash
+lightning-cli impscan test='{"<node_id>":"<heuristic name>"}'
+```
+i.e.,
+```bash
+$ lightning-cli impscan test='{"02df5ffe895c778e10f7742a6c5b8a0cefbe9465df58b92fadeb883752c8107c8f":"CLN"}'
+[
+   {
+      "node_id": "02df5ffe895c778e10f7742a6c5b8a0cefbe9465df58b92fadeb883752c8107c8f",
+      "features": "800000080a6aa2",
+      "test heuristic": "CLN",
+      "fingerprint": "CLN",
+      "status": true
+   }
+]
+```
+
 Future work:
- - Implement a test to verify correct identification of specific known nodes.
  - Add storage to document changes in network implementation usage over time.
