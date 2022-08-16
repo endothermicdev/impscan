@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-from pyln.client import Plugin
-import time
+from pyln.client import Plugin, RpcError
 from enum import Enum
 
 plugin = Plugin()
@@ -44,15 +43,14 @@ class heuristic(object):
     def __init__(self, implementation_name, **features):
         self.name = implementation_name
         self.features = features
-        #assert isinstance(self.features, dict)
 
     def testFeature(self, features, bitnumber):
-        #Test for mandatory or optional positions.
+        """Test for mandatory or optional positions."""
         return((features&(1<<bitnumber)) != 0)
 
     def test(self,features):
-        # already an int
-        # features = int(feature_string,16)
+        """Test a features bitfield against this heuristic."""
+        assert isinstance(features, int)
         for fname, fvalue in self.features.items():
             if fvalue == feature.MANDATORY:
                 if not self.testFeature(features, possFeatures[fname]):
@@ -101,10 +99,12 @@ Unknown = heuristic("2200",
 all_heuristics = [CLN_EXP, Eclair, LND, CLN, LDK, Unknown]
 
 def testFeature(features, bitnumber):
-    #Test for mandatory or optional positions.
+    """Test for mandatory or optional positions."""
+    assert isinstance(features, int)
     return((features&(1<<bitnumber)) != 0)
 
 def identifyFingerprint(feat):
+    assert isinstance(feat, int)
     for h in all_heuristics:
         if h.test(feat):
             return h.name
@@ -139,26 +139,26 @@ def decodeFeatures(features):
         result.update({"Unknown features":uf})
     return result
 
-@plugin.method("impscan")
-def impscan(plugin, **kwargs):
-    """Estimate breakdown of various lightning implementations on the network.
-    This relies on the listnodes command and feature bits. Work in progress."""
-    for k in kwargs.keys():
-        if k not in ["node","features"]:
-            return(["unrecognized keyword '{}'".format(k)])
-    if ("node" in kwargs.keys()):
-        assert isinstance(kwargs["node"],str)
-        assert (len(kwargs["node"]) == 66)
-        node = plugin.rpc.listnodes(kwargs["node"])['nodes'][0]
-        return decodeFeatures(node["features"])
-    if ("features" in kwargs.keys()):
-        return(decodeFeatures(kwargs["features"]))
-    #Run analysis on all network nodes
+def singleNodeDecode(nodeid):
+    if (len(str(nodeid)) != 66):
+        raise Exception("nodeid must be 33 bytes (66 hex chars)")
+    try:
+        query = plugin.rpc.listnodes(str(nodeid))
+    except RpcError as e:
+        if ('code', -32602) in e.error.items():
+            return ("Nodeid not found. Invalid token")
+        return("Error encountered during call to listnodes: {}".format(e))
+    node = query['nodes'][0]
+    return decodeFeatures(node["features"])
+
+def fullScan():
+    """Fingerprint all nodes on the network using all heuristics."""
     heuristic_check = {}
     for h in all_heuristics:
         for f in h.features.keys():
             if f not in possFeatures.keys():
-                return({"error":"{} not a possible feature ({} heuristic)".format(f, h.name)})
+                return({"error":"{} not a possible feature "
+                        "({} heuristic)".format(f, h.name)})
     plugin.log("impscan calling listnodes via rpc")
     nodes = plugin.rpc.listnodes()['nodes']
     s = "impscan: listnodes returned {} items".format(len(nodes))
@@ -180,12 +180,27 @@ def impscan(plugin, **kwargs):
         r = identifyFingerprint(int(n["features"],16))
         if r == "indef":
             indefs.append(n)
-        result[r] = result[r] + 1
+        result[r] += 1
     t = 0
     for i in result.keys():
         t += result[i]
 
     return result
+
+
+@plugin.method("impscan")
+def impscan(plugin, **kwargs):
+    """Estimate breakdown of various lightning implementations on the network.
+    This relies on the listnodes command and feature bits. Work in progress."""
+    for k in kwargs.keys():
+        if k not in ["node","features","testnodes"]:
+            return(["unrecognized keyword '{}'".format(k)])
+    if ("node" in kwargs.keys()):
+        return singleNodeDecode(kwargs["node"])
+    if ("features" in kwargs.keys()):
+        return(decodeFeatures(kwargs["features"]))
+    #Run analysis on all network nodes
+    return fullScan()
 
 
 @plugin.init()
