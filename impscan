@@ -132,7 +132,7 @@ def decodeFeatures(features):
     assert isinstance(features, str)
     try:
         f = int(features, 16)
-    except:
+    except ValueError:
         return (["feature bit decode failed. (hex encoding required)"])
     result = {}
     for k, v in possFeatures.items():
@@ -187,7 +187,6 @@ def testNodes(test_items):
 
 def fullScan():
     """Fingerprint all nodes on the network using all heuristics."""
-    heuristic_check = {}
     for h in all_heuristics:
         for f in h.features.keys():
             if f not in possFeatures.keys():
@@ -201,7 +200,7 @@ def fullScan():
     result = {}
     for h in all_heuristics:
         result.update({h.name: 0})
-    result.update({"indef": 0, "no features": 0})
+    result.update({"indef": 0, "no features": 0, "total": len(nodes)})
     indefs = []
     for n in nodes:
         c += 1
