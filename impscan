@@ -5,11 +5,19 @@ from enum import Enum
 plugin = Plugin()
 
 # Still experimental, not interop tested/approved.
-pending_features = {"OPTION_WILL_FUND_FOR_FOOD": 30,
+pending_features = {"OPT_DUAL_FUND": 28,
+                    "OPTION_WILL_FUND_FOR_FOOD": 30,
                     "OPTION_INV_GOSSIP": 34,
                     "OPTION_SCHNORR_GOSSIP": 38,
+                    "CLN_WANT_PEER_STORAGE": 40,
+                    "CLN_PROVIDE_PEER_STORAGE": 42,
                     "KEYSEND": 54,
-                    "TRUSTED_SWAP_IN_PROVIDER": 142}
+                    "TRUSTED_SWAP_IN_PROVIDER": 142,
+                    "TRUSTED_BACKUP_CLIENT": 144,
+                    "TRUSTED_BACKUP_PROVIDER": 146,
+                    "LSPS0_CONFORMANCE": 728
+                    }
+
 # Established features from BOLT7
 est_features = {"OPTION_DATA_LOSS_PROTECT": 0,
                 "INITIAL_ROUTING_SYNC": 2,
@@ -23,8 +31,8 @@ est_features = {"OPTION_DATA_LOSS_PROTECT": 0,
                 "OPTION_SUPPORT_LARGE_CHANNEL": 18,
                 "OPTION_ANCHOR_OUTPUTS": 20,
                 "OPTION_ANCHORS_ZERO_FEE_HTLC_TX": 22,
+                "OPTION_ROUTE_BLINDING": 24,
                 "OPTION_SHUTDOWN_ANYSEGWIT": 26,
-                "OPT_DUAL_FUND": 28,
                 "OPTION_CHANNEL_TYPE": 44,
                 "OPTION_SCID_ALIAS": 46,
                 "OPTION_PAYMENT_METADATA": 48,
@@ -73,9 +81,18 @@ class heuristic(object):
         return True
 
 
-CLN_EXP = heuristic("CLN Experimental",
-                    OPT_DUAL_FUND=feature.OPTIONAL,
-                    GOSSIP_QUERIES_EX=feature.OPTIONAL)
+CLN_DF_NEW = heuristic("CLN v23.02+ Dual-Fund",
+                       OPT_DUAL_FUND=feature.OPTIONAL,
+                       OPTION_ROUTE_BLINDING=feature.OPTIONAL,
+                       OPTION_DATA_LOSS_PROTECT=feature.OPTIONAL,
+                       OPTION_STATIC_REMOTEKEY=feature.NOT_MANDATORY,
+                       GOSSIP_QUERIES_EX=feature.OPTIONAL)
+
+CLN_DF_OLD = heuristic("CLN Broken Dual-Fund",
+                       OPT_DUAL_FUND=feature.OPTIONAL,
+                       OPTION_DATA_LOSS_PROTECT=feature.OPTIONAL,
+                       OPTION_STATIC_REMOTEKEY=feature.NOT_MANDATORY,
+                       GOSSIP_QUERIES_EX=feature.OPTIONAL)
 
 Eclair = heuristic("Eclair",
                    OPTION_SUPPORT_LARGE_CHANNEL=feature.OPTIONAL,
@@ -98,7 +115,7 @@ Unknown = heuristic("2200",
 
 
 # heuristics should be ordered from most unique/restrictive features to least
-all_heuristics = [CLN_EXP, Eclair, LND, CLN, LDK, Unknown]
+all_heuristics = [CLN_DF_NEW, CLN_DF_OLD, Eclair, LND, CLN, LDK, Unknown]
 
 
 def testFeature(features, bitnumber):
