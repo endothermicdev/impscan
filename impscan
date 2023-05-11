@@ -254,17 +254,20 @@ def fullScan():
 def impscan(plugin, **kwargs):
     """Estimate breakdown of various lightning implementations on the network.
     This relies on the listnodes command and feature bits. Work in progress."""
-    for k in kwargs.keys():
-        if k not in ["node", "features", "test"]:
-            return ["unrecognized keyword '{}'".format(k)]
-    if "node" in kwargs.keys():
-        return singleNodeDecode(kwargs["node"])
-    if "features" in kwargs.keys():
-        return decodeFeatures(kwargs["features"])
-    if "test" in kwargs.keys():
-        return testNodes(kwargs["test"])
+    possible_arguments = ["node", "features", "test"]
     # Run analysis on all network nodes
-    return fullScan()
+    if not kwargs:
+        return fullScan()
+    for cmd, string in kwargs.items():
+        if cmd not in possible_arguments:
+            return (f"unrecognized keyword '{cmd}'. Try one of "
+                    f"`{'`, `'.join(possible_arguments)}`.")
+        if cmd == "node":
+            return singleNodeDecode(string)
+        if cmd == "features":
+            return decodeFeatures(string)
+        if cmd == "test":
+            return testNodes(string)
 
 
 @plugin.init()
