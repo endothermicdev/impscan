@@ -41,7 +41,7 @@ est_features = {"OPTION_DATA_LOSS_PROTECT": 0,
 possFeatures = {**pending_features, **est_features}
 
 
-class feature(Enum):
+class Feature(Enum):
     MANDATORY = 'mandatory'
     OPTIONAL = 'optional'
     NOT_MANDATORY = 'not mandatory'
@@ -49,12 +49,14 @@ class feature(Enum):
     NOT_SET = 'not set'
 
 
-class heuristic(object):
+class Heuristic(object):
+    """A set of features and flagging used to fingerprint a
+    lightning node to a certain implementation."""
     def __init__(self, implementation_name, **features):
         self.name = implementation_name
         self.features = features
 
-    def testFeature(self, features, bitnumber):
+    def test_feature(self, features, bitnumber):
         """Test for mandatory or optional positions."""
         return ((features & (1 << bitnumber)) != 0)
 
@@ -62,56 +64,56 @@ class heuristic(object):
         """Test a features bitfield against this heuristic."""
         assert isinstance(features, int)
         for fname, fvalue in self.features.items():
-            if fvalue == feature.MANDATORY:
-                if not self.testFeature(features, possFeatures[fname]):
+            if fvalue == Feature.MANDATORY:
+                if not self.test_feature(features, possFeatures[fname]):
                     return False
-            if fvalue == feature.OPTIONAL:
-                if not self.testFeature(features, possFeatures[fname]+1):
+            if fvalue == Feature.OPTIONAL:
+                if not self.test_feature(features, possFeatures[fname]+1):
                     return False
-            if fvalue == feature.NOT_MANDATORY:
-                if self.testFeature(features, possFeatures[fname]):
+            if fvalue == Feature.NOT_MANDATORY:
+                if self.test_feature(features, possFeatures[fname]):
                     return False
-            if fvalue == feature.NOT_OPTIONAL:
-                if self.testFeature(features, possFeatures[fname]):
+            if fvalue == Feature.NOT_OPTIONAL:
+                if self.test_feature(features, possFeatures[fname]):
                     return False
-            if fvalue == feature.NOT_SET:
-                if self.testFeature(features, possFeatures[fname]) or\
-                   self.testFeature(features, possFeatures[fname]+1):
+            if fvalue == Feature.NOT_SET:
+                if self.test_feature(features, possFeatures[fname]) or\
+                   self.test_feature(features, possFeatures[fname]+1):
                     return False
         return True
 
 
-CLN_DF_NEW = heuristic("CLN v23.02+ Dual-Fund",
-                       OPT_DUAL_FUND=feature.OPTIONAL,
-                       OPTION_ROUTE_BLINDING=feature.OPTIONAL,
-                       OPTION_DATA_LOSS_PROTECT=feature.OPTIONAL,
-                       OPTION_STATIC_REMOTEKEY=feature.NOT_MANDATORY,
-                       GOSSIP_QUERIES_EX=feature.OPTIONAL)
+CLN_DF_NEW = Heuristic("CLN v23.02+ Dual-Fund",
+                       OPT_DUAL_FUND=Feature.OPTIONAL,
+                       OPTION_ROUTE_BLINDING=Feature.OPTIONAL,
+                       OPTION_DATA_LOSS_PROTECT=Feature.OPTIONAL,
+                       OPTION_STATIC_REMOTEKEY=Feature.NOT_MANDATORY,
+                       GOSSIP_QUERIES_EX=Feature.OPTIONAL)
 
-CLN_DF_OLD = heuristic("CLN Broken Dual-Fund",
-                       OPT_DUAL_FUND=feature.OPTIONAL,
-                       OPTION_DATA_LOSS_PROTECT=feature.OPTIONAL,
-                       OPTION_STATIC_REMOTEKEY=feature.NOT_MANDATORY,
-                       GOSSIP_QUERIES_EX=feature.OPTIONAL)
+CLN_DF_OLD = Heuristic("CLN Broken Dual-Fund",
+                       OPT_DUAL_FUND=Feature.OPTIONAL,
+                       OPTION_DATA_LOSS_PROTECT=Feature.OPTIONAL,
+                       OPTION_STATIC_REMOTEKEY=Feature.NOT_MANDATORY,
+                       GOSSIP_QUERIES_EX=Feature.OPTIONAL)
 
-Eclair = heuristic("Eclair",
-                   OPTION_SUPPORT_LARGE_CHANNEL=feature.OPTIONAL,
-                   OPTION_ANCHORS_ZERO_FEE_HTLC_TX=feature.OPTIONAL,
-                   OPTION_DATA_LOSS_PROTECT=feature.OPTIONAL)
+Eclair = Heuristic("Eclair",
+                   OPTION_SUPPORT_LARGE_CHANNEL=Feature.OPTIONAL,
+                   OPTION_ANCHORS_ZERO_FEE_HTLC_TX=Feature.OPTIONAL,
+                   OPTION_DATA_LOSS_PROTECT=Feature.OPTIONAL)
 
-LND = heuristic("LND", OPTION_DATA_LOSS_PROTECT=feature.MANDATORY)
+LND = Heuristic("LND", OPTION_DATA_LOSS_PROTECT=Feature.MANDATORY)
 
-CLN = heuristic("CLN",
-                OPTION_DATA_LOSS_PROTECT=feature.OPTIONAL,
-                OPTION_STATIC_REMOTEKEY=feature.NOT_MANDATORY,
-                GOSSIP_QUERIES_EX=feature.OPTIONAL)
+CLN = Heuristic("CLN",
+                OPTION_DATA_LOSS_PROTECT=Feature.OPTIONAL,
+                OPTION_STATIC_REMOTEKEY=Feature.NOT_MANDATORY,
+                GOSSIP_QUERIES_EX=Feature.OPTIONAL)
 
-LDK = heuristic("LDK",
-                VAR_ONION_OPTIN=feature.MANDATORY)
+LDK = Heuristic("LDK",
+                VAR_ONION_OPTIN=Feature.MANDATORY)
 
-Unknown = heuristic("2200",
-                    VAR_ONION_OPTIN=feature.OPTIONAL,
-                    OPTION_STATIC_REMOTEKEY=feature.OPTIONAL)
+Unknown = Heuristic("2200",
+                    VAR_ONION_OPTIN=Feature.OPTIONAL,
+                    OPTION_STATIC_REMOTEKEY=Feature.OPTIONAL)
 
 
 # heuristics should be ordered from most unique/restrictive features to least
@@ -126,29 +128,29 @@ class ListNodesException(Exception):
     """listnodes rpc failure"""
 
 
-def testFeature(features, bitnumber):
+def test_feature(features, bitnumber):
     """Test for mandatory or optional positions."""
     assert isinstance(features, int)
-    return ((features & (1 << bitnumber)) != 0)
+    return (features & (1 << bitnumber)) != 0
 
 
 def identifyFingerprint(feat):
     assert isinstance(feat, int)
-    for h in all_heuristics:
-        if h.test(feat):
-            return h.name
-    return ("indef")
+    for heuristic in all_heuristics:
+        if heuristic.test(feat):
+            return heuristic.name
+    return "indef"
 
 
 def unknownFeatures(features):
     known_features = []
     unknown = []
-    for k in possFeatures.keys():
-        known_features.append(possFeatures[k])
-        known_features.append(possFeatures[k]+1)
-    for x in range(len(bin(features))-2):
-        if (testFeature(features, x) and (x not in known_features)):
-            unknown.append(x)
+    for _, feat_num in possFeatures.items():
+        known_features.append(feat_num)
+        known_features.append(feat_num+1)
+    for bit in range(len(bin(features))-2):
+        if (test_feature(features, bit) and (bit not in known_features)):
+            unknown.append(bit)
     return unknown
 
 
@@ -161,13 +163,12 @@ def decodeFeatures(features):
         return ["feature bit decode failed. (hex encoding required)"]
     result = {}
     for name, feat_num in possFeatures.items():
-        if testFeature(f, feat_num+1):
+        if test_feature(f, feat_num+1):
             result.update({"{:<4} {}".format(feat_num+1, name): "optional"})
-        elif testFeature(f, feat_num):
+        elif test_feature(f, feat_num):
             result.update({"{:<4} {}".format(feat_num, name): "mandatory"})
-    uf = unknownFeatures(f)
-    if (len(uf) > 0):
-        result.update({"Unknown features": uf})
+    if unknownFeatures(f):
+        result.update({"Unknown features": unknownFeatures(f)})
     return result
 
 
@@ -216,38 +217,33 @@ def testNodes(test_items):
 
 def fullScan():
     """Fingerprint all nodes on the network using all heuristics."""
-    for h in all_heuristics:
-        for f in h.features.keys():
-            if f not in possFeatures.keys():
-                return {"error": "{} not a possible feature "
-                        "({} heuristic)".format(f, h.name)}
+    for heuristic in all_heuristics:
+        for feature in heuristic.features.keys():
+            if feature not in possFeatures.keys():
+                return {"error": f"{feature} not a possible feature "
+                        f"({heuristic.name} heuristic)"}
     plugin.log("impscan calling listnodes via rpc")
     nodes = plugin.rpc.listnodes()['nodes']
-    s = "impscan: listnodes returned {} items".format(len(nodes))
-    plugin.log(s)
-    c = 0
-    result = {}
-    for h in all_heuristics:
-        result.update({h.name: 0})
-    result.update({"indef": 0, "no features": 0, "total": len(nodes)})
+    plugin.log(f"impscan: listnodes returned {len(nodes)} items")
+    tally = {}
+    for heuristic in all_heuristics:
+        tally.update({heuristic.name: 0})
+    tally.update({"indef": 0, "no features": 0, "total": len(nodes)})
     indefs = []
-    for n in nodes:
-        c += 1
-        if ("features" not in n):
-            result["no features"] += 1
-            continue
-        if (n["features"] is None or n["features"] == ''):
-            result["no features"] += 1
-            continue
-        r = identifyFingerprint(int(n["features"], 16))
-        if r == "indef":
-            indefs.append(n)
-        result[r] += 1
-    t = 0
-    for i in result.keys():
-        t += result[i]
 
-    return result
+    for node in nodes:
+        if "features" not in node:
+            tally["no features"] += 1
+            continue
+        if node["features"] is None or node["features"] == '':
+            tally["no features"] += 1
+            continue
+        fingerprint = identifyFingerprint(int(node["features"], 16))
+        if fingerprint == "indef":
+            indefs.append(node)
+        tally[fingerprint] += 1
+
+    return tally
 
 
 @plugin.method("impscan")
