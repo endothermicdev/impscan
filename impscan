@@ -118,6 +118,14 @@ Unknown = heuristic("2200",
 all_heuristics = [CLN_DF_NEW, CLN_DF_OLD, Eclair, LND, CLN, LDK, Unknown]
 
 
+class MissingNode(Exception):
+    """node_id was not found by lightningd"""
+
+
+class ListNodesException(Exception):
+    """listnodes rpc failure"""
+
+
 def testFeature(features, bitnumber):
     """Test for mandatory or optional positions."""
     assert isinstance(features, int)
@@ -168,16 +176,22 @@ def queryNodeFeatures(nodeid):
         raise Exception("nodeid must be 33 bytes (66 hex chars)")
     try:
         query = plugin.rpc.listnodes(str(nodeid))
-    except RpcError as e:
-        if ('code', -32602) in e.error.items():
-            return ("Nodeid not found. Invalid token")
-        return "Error encountered during call to listnodes: {}".format(e)
+    except RpcError as err:
+        if ('code', -32602) in err.error.items():
+            raise MissingNode(f"node_id {nodeid} not found") from err
+        raise ListNodesException(("Error encountered during call to "
+                                  f"listnodes: {err}")) from err
+    if len(query['nodes']) == 0:
+        raise MissingNode(f"node_id {nodeid} not found")
     node = query['nodes'][0]
     return node["features"]
 
 
 def singleNodeDecode(nodeid):
-    return decodeFeatures(queryNodeFeatures(nodeid))
+    try:
+        return decodeFeatures(queryNodeFeatures(nodeid))
+    except MissingNode:
+        return f'node_id {nodeid} not found'
 
 
 def testNodes(test_items):
@@ -191,8 +205,6 @@ def testNodes(test_items):
     answer = []
     for node, h in test_items.items():
         f = queryNodeFeatures(node)
-        if "Error" in f:
-            return f
         fingerprint = identifyFingerprint(int(f, 16))
         answer.append({"node_id": node,
                        "features": f,
