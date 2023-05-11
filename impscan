@@ -172,6 +172,9 @@ def decode_features(features):
             result.update({"{:<4} {}".format(feat_num, name): "mandatory"})
     if unknown_features(f):
         result.update({"Unknown features": unknown_features(f)})
+    if len(unknown_features(f)) > 20:
+        return ("excessive unknown features while decoding feature bits "
+                f"string {features}")
     return result
 
 
@@ -193,11 +196,13 @@ def query_node_features(nodeid):
 
 
 def single_node_decode(nodeid):
-    """List the decoded features of a given node."""
+    """Find out about a node's feature set and implementation guess"""
     try:
-        return decode_features(query_node_features(nodeid))
+        node_features = query_node_features(nodeid)
     except MissingNode:
         return f'node_id {nodeid} not found'
+    return [decode_features(node_features),
+            identify_fingerprint(int(node_features, 16))]
 
 
 def test_nodes(test_items):
@@ -251,13 +256,24 @@ def full_scan():
     return tally
 
 
+def infer_usage(arg):
+    """User did not provide explicit call. See if we can do the
+    right thing anyway."""
+    if len(arg) == 66:
+        return single_node_decode(arg)
+    maybe_features = decode_features(arg)
+    if 'failed' in maybe_features:
+        return f'could not infer usage of {arg}'
+    return maybe_features
+
+
 @plugin.method("impscan")
-def impscan(plugin, **kwargs):
+def impscan(plugin, *args, **kwargs):
     """Estimate breakdown of various lightning implementations on the network.
     This relies on the listnodes command and feature bits. Work in progress."""
     possible_arguments = ["node", "features", "test"]
     # Run analysis on all network nodes
-    if not kwargs:
+    if not kwargs and not args:
         return full_scan()
     for cmd, string in kwargs.items():
         if cmd not in possible_arguments:
@@ -269,6 +285,8 @@ def impscan(plugin, **kwargs):
             return decode_features(string)
         if cmd == "test":
             return test_nodes(string)
+    for arg in args:
+        return infer_usage(arg)
 
 
 @plugin.init()
