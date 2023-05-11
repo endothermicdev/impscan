@@ -134,7 +134,9 @@ def test_feature(features, bitnumber):
     return (features & (1 << bitnumber)) != 0
 
 
-def identifyFingerprint(feat):
+def identify_fingerprint(feat):
+    """tests the given feature bits against each heuristic in order until
+    a match is found"""
     assert isinstance(feat, int)
     for heuristic in all_heuristics:
         if heuristic.test(feat):
@@ -142,7 +144,8 @@ def identifyFingerprint(feat):
     return "indef"
 
 
-def unknownFeatures(features):
+def unknown_features(features):
+    """Returns a list of any features that are undocumented."""
     known_features = []
     unknown = []
     for _, feat_num in possFeatures.items():
@@ -154,8 +157,8 @@ def unknownFeatures(features):
     return unknown
 
 
-def decodeFeatures(features):
-    """pass a feature bit string (HEX) and return a human readable output."""
+def decode_features(features):
+    """Pass a feature bit string (HEX) and return a human readable output."""
     assert isinstance(features, str)
     try:
         f = int(features, 16)
@@ -167,12 +170,13 @@ def decodeFeatures(features):
             result.update({"{:<4} {}".format(feat_num+1, name): "optional"})
         elif test_feature(f, feat_num):
             result.update({"{:<4} {}".format(feat_num, name): "mandatory"})
-    if unknownFeatures(f):
-        result.update({"Unknown features": unknownFeatures(f)})
+    if unknown_features(f):
+        result.update({"Unknown features": unknown_features(f)})
     return result
 
 
-def queryNodeFeatures(nodeid):
+def query_node_features(nodeid):
+    """return featurebits for a single node"""
     if len(str(nodeid)) != 66:
         raise Exception("nodeid must be 33 bytes (66 hex chars)")
     try:
@@ -188,14 +192,15 @@ def queryNodeFeatures(nodeid):
     return node["features"]
 
 
-def singleNodeDecode(nodeid):
+def single_node_decode(nodeid):
+    """List the decoded features of a given node."""
     try:
-        return decodeFeatures(queryNodeFeatures(nodeid))
+        return decode_features(query_node_features(nodeid))
     except MissingNode:
         return f'node_id {nodeid} not found'
 
 
-def testNodes(test_items):
+def test_nodes(test_items):
     """feed a json dict of node_id:heuristic pairs and this will fingerprint
     the nodes and validate that they match the desired heuristic. A list of
     nodes from all implementations will validate that all the heuristics
@@ -205,8 +210,8 @@ def testNodes(test_items):
 '{\"node_id\":\"heuristic\"}'"
     answer = []
     for node, test_heur in test_items.items():
-        feats = queryNodeFeatures(node)
-        fingerprint = identifyFingerprint(int(feats, 16))
+        feats = query_node_features(node)
+        fingerprint = identify_fingerprint(int(feats, 16))
         answer.append({"node_id": node,
                        "features": feats,
                        "test heuristic": test_heur,
@@ -215,7 +220,7 @@ def testNodes(test_items):
     return answer
 
 
-def fullScan():
+def full_scan():
     """Fingerprint all nodes on the network using all heuristics."""
     for heuristic in all_heuristics:
         for feature in heuristic.features.keys():
@@ -238,7 +243,7 @@ def fullScan():
         if node["features"] is None or node["features"] == '':
             tally["no features"] += 1
             continue
-        fingerprint = identifyFingerprint(int(node["features"], 16))
+        fingerprint = identify_fingerprint(int(node["features"], 16))
         if fingerprint == "indef":
             indefs.append(node)
         tally[fingerprint] += 1
@@ -253,17 +258,17 @@ def impscan(plugin, **kwargs):
     possible_arguments = ["node", "features", "test"]
     # Run analysis on all network nodes
     if not kwargs:
-        return fullScan()
+        return full_scan()
     for cmd, string in kwargs.items():
         if cmd not in possible_arguments:
             return (f"unrecognized keyword '{cmd}'. Try one of "
                     f"`{'`, `'.join(possible_arguments)}`.")
         if cmd == "node":
-            return singleNodeDecode(string)
+            return single_node_decode(string)
         if cmd == "features":
-            return decodeFeatures(string)
+            return decode_features(string)
         if cmd == "test":
-            return testNodes(string)
+            return test_nodes(string)
 
 
 @plugin.init()
