@@ -158,13 +158,13 @@ def decodeFeatures(features):
     try:
         f = int(features, 16)
     except ValueError:
-        return (["feature bit decode failed. (hex encoding required)"])
+        return ["feature bit decode failed. (hex encoding required)"]
     result = {}
-    for k, v in possFeatures.items():
-        if testFeature(f, possFeatures[k]+1):
-            result.update({"{:<4} {}".format(v+1, k): "optional"})
-        elif testFeature(f, possFeatures[k]):
-            result.update({"{:<4} {}".format(v, k): "mandatory"})
+    for name, feat_num in possFeatures.items():
+        if testFeature(f, feat_num+1):
+            result.update({"{:<4} {}".format(feat_num+1, name): "optional"})
+        elif testFeature(f, feat_num):
+            result.update({"{:<4} {}".format(feat_num, name): "mandatory"})
     uf = unknownFeatures(f)
     if (len(uf) > 0):
         result.update({"Unknown features": uf})
@@ -172,7 +172,7 @@ def decodeFeatures(features):
 
 
 def queryNodeFeatures(nodeid):
-    if (len(str(nodeid)) != 66):
+    if len(str(nodeid)) != 66:
         raise Exception("nodeid must be 33 bytes (66 hex chars)")
     try:
         query = plugin.rpc.listnodes(str(nodeid))
@@ -203,14 +203,14 @@ def testNodes(test_items):
         return "test argument requires a json dict of format \
 '{\"node_id\":\"heuristic\"}'"
     answer = []
-    for node, h in test_items.items():
-        f = queryNodeFeatures(node)
-        fingerprint = identifyFingerprint(int(f, 16))
+    for node, test_heur in test_items.items():
+        feats = queryNodeFeatures(node)
+        fingerprint = identifyFingerprint(int(feats, 16))
         answer.append({"node_id": node,
-                       "features": f,
-                       "test heuristic": h,
+                       "features": feats,
+                       "test heuristic": test_heur,
                        "fingerprint": fingerprint,
-                       "status": fingerprint == h})
+                       "status": fingerprint == test_heur})
     return answer
 
 
@@ -257,11 +257,11 @@ def impscan(plugin, **kwargs):
     for k in kwargs.keys():
         if k not in ["node", "features", "test"]:
             return ["unrecognized keyword '{}'".format(k)]
-    if ("node" in kwargs.keys()):
+    if "node" in kwargs.keys():
         return singleNodeDecode(kwargs["node"])
-    if ("features" in kwargs.keys()):
+    if "features" in kwargs.keys():
         return decodeFeatures(kwargs["features"])
-    if ("test" in kwargs.keys()):
+    if "test" in kwargs.keys():
         return testNodes(kwargs["test"])
     # Run analysis on all network nodes
     return fullScan()
