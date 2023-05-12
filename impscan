@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-from pyln.client import Plugin, RpcError
 from enum import Enum
+from typing import Union
+from pyln.client import Plugin, RpcError
 
 plugin = Plugin()
 
@@ -42,6 +43,7 @@ possFeatures = {**pending_features, **est_features}
 
 
 class Feature(Enum):
+    """Describes a particular feature bit requirement for a heuristic"""
     MANDATORY = 'mandatory'
     OPTIONAL = 'optional'
     NOT_MANDATORY = 'not mandatory'
@@ -49,18 +51,18 @@ class Feature(Enum):
     NOT_SET = 'not set'
 
 
-class Heuristic(object):
+class Heuristic():
     """A set of features and flagging used to fingerprint a
     lightning node to a certain implementation."""
-    def __init__(self, implementation_name, **features):
+    def __init__(self, implementation_name: str, **features: Feature):
         self.name = implementation_name
         self.features = features
 
-    def test_feature(self, features, bitnumber):
+    def test_feature(self, features: int, bitnumber: int) -> bool:
         """Test for mandatory or optional positions."""
-        return ((features & (1 << bitnumber)) != 0)
+        return (features & (1 << bitnumber)) != 0
 
-    def test(self, features):
+    def test(self, features: int):
         """Test a features bitfield against this heuristic."""
         assert isinstance(features, int)
         for fname, fvalue in self.features.items():
@@ -128,13 +130,13 @@ class ListNodesException(Exception):
     """listnodes rpc failure"""
 
 
-def test_feature(features, bitnumber):
+def test_feature(features: int, bitnumber: int):
     """Test for mandatory or optional positions."""
     assert isinstance(features, int)
     return (features & (1 << bitnumber)) != 0
 
 
-def identify_fingerprint(feat):
+def identify_fingerprint(feat: int):
     """tests the given feature bits against each heuristic in order until
     a match is found"""
     assert isinstance(feat, int)
@@ -144,7 +146,7 @@ def identify_fingerprint(feat):
     return "indef"
 
 
-def unknown_features(features):
+def unknown_features(features: int) -> list:
     """Returns a list of any features that are undocumented."""
     known_features = []
     unknown = []
@@ -157,13 +159,13 @@ def unknown_features(features):
     return unknown
 
 
-def decode_features(features):
+def decode_features(features: str) -> Union[dict, str]:
     """Pass a feature bit string (HEX) and return a human readable output."""
     assert isinstance(features, str)
     try:
         f = int(features, 16)
     except ValueError:
-        return ["feature bit decode failed. (hex encoding required)"]
+        return "feature bit decode failed. (hex encoding required)"
     result = {}
     for name, feat_num in possFeatures.items():
         if test_feature(f, feat_num+1):
@@ -178,8 +180,8 @@ def decode_features(features):
     return result
 
 
-def query_node_features(nodeid):
-    """return featurebits for a single node"""
+def query_node_features(nodeid: str) -> str:
+    """return featurebits (hex encoded) for a single node"""
     if len(str(nodeid)) != 66:
         raise Exception("nodeid must be 33 bytes (66 hex chars)")
     try:
@@ -195,7 +197,7 @@ def query_node_features(nodeid):
     return node["features"]
 
 
-def single_node_decode(nodeid):
+def single_node_decode(nodeid: str) -> Union[list, str]:
     """Find out about a node's feature set and implementation guess"""
     try:
         node_features = query_node_features(nodeid)
@@ -205,7 +207,7 @@ def single_node_decode(nodeid):
             identify_fingerprint(int(node_features, 16))]
 
 
-def test_nodes(test_items):
+def test_nodes(test_items: dict) -> list:
     """feed a json dict of node_id:heuristic pairs and this will fingerprint
     the nodes and validate that they match the desired heuristic. A list of
     nodes from all implementations will validate that all the heuristics
@@ -225,7 +227,7 @@ def test_nodes(test_items):
     return answer
 
 
-def full_scan():
+def full_scan() -> dict:
     """Fingerprint all nodes on the network using all heuristics."""
     for heuristic in all_heuristics:
         for feature in heuristic.features.keys():
@@ -256,7 +258,7 @@ def full_scan():
     return tally
 
 
-def infer_usage(arg):
+def infer_usage(arg: str) -> Union[dict, str]:
     """User did not provide explicit call. See if we can do the
     right thing anyway."""
     if len(arg) == 66:
@@ -268,7 +270,7 @@ def infer_usage(arg):
 
 
 @plugin.method("impscan")
-def impscan(plugin, *args, **kwargs):
+def impscan(plugin, *args, **kwargs) -> Union[dict, list, str]:
     """Estimate breakdown of various lightning implementations on the network.
     This relies on the listnodes command and feature bits. Work in progress."""
     possible_arguments = ["node", "features", "test"]
