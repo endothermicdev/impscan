@@ -99,7 +99,8 @@ CLN_DF_OLD = Heuristic("CLN Broken Dual-Fund",
                        OPT_DUAL_FUND=Feature.OPTIONAL,
                        OPTION_DATA_LOSS_PROTECT=Feature.OPTIONAL,
                        OPTION_STATIC_REMOTEKEY=Feature.NOT_MANDATORY,
-                       GOSSIP_QUERIES_EX=Feature.OPTIONAL)
+                       GOSSIP_QUERIES_EX=Feature.OPTIONAL,
+                       KEYSEND=Feature.OPTIONAL)
 
 Eclair = Heuristic("Eclair",
                    OPTION_SUPPORT_LARGE_CHANNEL=Feature.OPTIONAL,
@@ -111,7 +112,8 @@ LND = Heuristic("LND", OPTION_DATA_LOSS_PROTECT=Feature.MANDATORY)
 CLN = Heuristic("CLN",
                 OPTION_DATA_LOSS_PROTECT=Feature.OPTIONAL,
                 OPTION_STATIC_REMOTEKEY=Feature.NOT_MANDATORY,
-                GOSSIP_QUERIES_EX=Feature.OPTIONAL)
+                GOSSIP_QUERIES_EX=Feature.OPTIONAL,
+                KEYSEND=Feature.OPTIONAL)
 
 LDK = Heuristic("LDK",
                 VAR_ONION_OPTIN=Feature.MANDATORY)
