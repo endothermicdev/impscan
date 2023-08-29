@@ -88,6 +88,9 @@ class Heuristic():
         return True
 
 
+NO_ANYSEGWIT = Heuristic("No OPTION_SHUTDOWN_ANYSEGWIT",
+                         OPTION_SHUTDOWN_ANYSEGWIT=Feature.NOT_SET)
+
 CLN_DF_NEW = Heuristic("CLN v23.02+ Dual-Fund",
                        OPT_DUAL_FUND=Feature.OPTIONAL,
                        OPTION_ROUTE_BLINDING=Feature.OPTIONAL,
@@ -124,7 +127,8 @@ Unknown = Heuristic("2200",
 
 
 # heuristics should be ordered from most unique/restrictive features to least
-all_heuristics = [CLN_DF_NEW, CLN_DF_OLD, Eclair, LND, CLN, LDK, Unknown]
+all_heuristics = [NO_ANYSEGWIT, CLN_DF_NEW, CLN_DF_OLD, Eclair, LND,
+                  CLN, LDK, Unknown]
 
 
 class MissingNode(Exception):
