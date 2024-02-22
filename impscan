@@ -243,9 +243,8 @@ def full_scan() -> dict:
             if feature not in possFeatures.keys():
                 return {"error": f"{feature} not a possible feature "
                         f"({heuristic.name} heuristic)"}
-    plugin.log("impscan calling listnodes via rpc")
     nodes = plugin.rpc.listnodes()['nodes']
-    plugin.log(f"impscan: listnodes returned {len(nodes)} items")
+    plugin.log(f"listnodes returned {len(nodes)} items")
     tally = {}
     for heuristic in all_heuristics:
         tally.update({heuristic.name: 0})
@@ -278,18 +277,31 @@ def infer_usage(arg: str) -> Union[dict, str]:
     return maybe_features
 
 
-@plugin.method("impscan")
-def impscan(plugin, *args, **kwargs) -> Union[dict, list, str]:
-    """Estimate breakdown of various lightning implementations on the network.
-    This relies on the listnodes command and feature bits. Work in progress."""
+def command_validation(args: list, kwargs: dict):
+    """Validate commands and syntax. Return an appropriate error string
+    if necessary."""
+    assert isinstance(args, (tuple, type(None)))
+    assert isinstance(kwargs, (dict, type(None)))
     possible_arguments = ["node", "features", "test"]
-    # Run analysis on all network nodes
-    if not kwargs and not args:
-        return full_scan()
     for cmd, string in kwargs.items():
         if cmd not in possible_arguments:
             return (f"unrecognized keyword '{cmd}'. Try one of "
                     f"`{'`, `'.join(possible_arguments)}`.")
+
+    return None
+
+
+@plugin.method("impscan")
+def impscan(plugin, *args, **kwargs) -> Union[dict, list, str]:
+    """Estimate breakdown of various lightning implementations on the network.
+    This relies on the listnodes command and feature bits. Work in progress."""
+    err = command_validation(args, kwargs)
+    if err:
+        return err
+    # Run analysis on all network nodes
+    if not kwargs and not args:
+        return full_scan()
+    for cmd, string in kwargs.items():
         if cmd == "node":
             return single_node_decode(string)
         if cmd == "features":
