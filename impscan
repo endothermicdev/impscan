@@ -131,6 +131,9 @@ Unknown = Heuristic("2200",
 all_heuristics = [NO_ANYSEGWIT, CLN_DF_NEW, CLN_DF_OLD, Eclair, LND,
                   CLN, LDK, Unknown]
 
+heuristic_sets = {"CLN": [CLN_DF_NEW, CLN_DF_OLD, CLN],
+                  "Unknown": [NO_ANYSEGWIT, Unknown]}
+
 
 class MissingNode(Exception):
     """node_id was not found by lightningd"""
@@ -264,7 +267,17 @@ def full_scan() -> dict:
             indefs.append(node)
         tally[fingerprint] += 1
 
-    return tally
+    categorized_tally = {}
+    for cat, heuristics in heuristic_sets.items():
+        category = {}
+        for heuristic in heuristics:
+            if heuristic.name not in tally.keys():
+                category.update({heuristic.name: 0})
+            else:
+                category.update({heuristic.name: tally.pop(heuristic.name)})
+        categorized_tally.update({cat: category})
+    categorized_tally.update(tally)
+    return categorized_tally
 
 
 def sample(heuristic: str, count: str):
