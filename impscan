@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from enum import Enum
 from typing import Union
+import random
 from pyln.client import Plugin, RpcError
 
 plugin = Plugin()
@@ -266,6 +267,32 @@ def full_scan() -> dict:
     return tally
 
 
+def sample(heuristic: str, count: str):
+    """return the first <count> random nodes matching <heuristic>"""
+    if count:
+        count = int(count)
+    else:
+        count = 1
+    if heuristic not in [h.name for h in all_heuristics]:
+        return f"{heuristic} is not a registered heurisitic"
+    nodes = plugin.rpc.listnodes()['nodes']
+    random.shuffle(nodes)
+    found = []
+    for node in nodes:
+        if "features" not in node:
+            continue
+        if node["features"] is None or node["features"] == '':
+            continue
+        fingerprint = identify_fingerprint(int(node["features"], 16))
+        if fingerprint == heuristic:
+            found.append(node)
+        if len(found) >= count:
+            break
+    if found:
+        return found
+    return f'no nodes found matching heuristic {heuristic}'
+
+
 def infer_usage(arg: str) -> Union[dict, str]:
     """User did not provide explicit call. See if we can do the
     right thing anyway."""
@@ -282,11 +309,13 @@ def command_validation(args: list, kwargs: dict):
     if necessary."""
     assert isinstance(args, (tuple, type(None)))
     assert isinstance(kwargs, (dict, type(None)))
-    possible_arguments = ["node", "features", "test"]
+    possible_arguments = ["node", "features", "test", "sample", "count"]
     for cmd, string in kwargs.items():
         if cmd not in possible_arguments:
             return (f"unrecognized keyword '{cmd}'. Try one of "
                     f"`{'`, `'.join(possible_arguments)}`.")
+        if cmd == "count" and "sample" not in kwargs.keys():
+            return "count only usable with `sample` command"
 
     return None
 
@@ -308,6 +337,10 @@ def impscan(plugin, *args, **kwargs) -> Union[dict, list, str]:
             return decode_features(string)
         if cmd == "test":
             return test_nodes(string)
+        if cmd == "sample":
+            if "count" in kwargs:
+                return sample(string, kwargs["count"])
+            return sample(string, None)
     for arg in args:
         return infer_usage(arg)
 
