@@ -7,14 +7,14 @@ from pyln.client import Plugin, RpcError
 plugin = Plugin()
 
 # Still experimental, not interop tested/approved.
-pending_features = {"OPT_DUAL_FUND": 28,
-                    "OPTION_WILL_FUND_FOR_FOOD": 30,
+pending_features = {"OPTION_WILL_FUND_FOR_FOOD": 30,
                     "OPTION_QUIESCE": 34,
                     "CLN_WANT_PEER_STORAGE": 40,
                     "CLN_PROVIDE_PEER_STORAGE": 42,
                     "KEYSEND": 54,
                     "OPTION_TRAMPOLINE_ROUTING": 56,
                     "OPTION_SPLICE": 60,
+                    "OPTION_SIMPLIFIED_UPDATE": 106,
                     "TRUSTED_SWAP_IN_PROVIDER": 142,
                     "TRUSTED_BACKUP_CLIENT": 144,
                     "TRUSTED_BACKUP_PROVIDER": 146,
@@ -37,6 +37,7 @@ est_features = {"OPTION_DATA_LOSS_PROTECT": 0,
                 "OPTION_ANCHORS_ZERO_FEE_HTLC_TX": 22,
                 "OPTION_ROUTE_BLINDING": 24,
                 "OPTION_SHUTDOWN_ANYSEGWIT": 26,
+                "OPT_DUAL_FUND": 28,
                 "OPTION_ONION_MESSAGES": 38,
                 "OPTION_CHANNEL_TYPE": 44,
                 "OPTION_SCID_ALIAS": 46,
@@ -48,6 +49,7 @@ possFeatures = {**pending_features, **est_features}
 
 class Feature(Enum):
     """Describes a particular feature bit requirement for a heuristic"""
+    SET = 'optional or mandatory'
     MANDATORY = 'mandatory'
     OPTIONAL = 'optional'
     NOT_MANDATORY = 'not mandatory'
