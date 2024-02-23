@@ -108,21 +108,46 @@ CLN_DF_OLD = Heuristic("CLN Broken Dual-Fund",
                        GOSSIP_QUERIES_EX=Feature.OPTIONAL,
                        KEYSEND=Feature.OPTIONAL)
 
+CLN_24_02 = Heuristic("CLN v24.02+",
+                      OPTION_DATA_LOSS_PROTECT=Feature.MANDATORY,
+                      OPT_GOSSIP_QUERIES=Feature.MANDATORY,
+                      OPTION_STATIC_REMOTEKEY=Feature.SET,
+                      GOSSIP_QUERIES_EX=Feature.OPTIONAL,
+                      KEYSEND=Feature.OPTIONAL,
+                      OPTION_ANCHORS_ZERO_FEE_HTLC_TX=Feature.OPTIONAL,
+                      OPTION_ROUTE_BLINDING=Feature.OPTIONAL,
+                      OPTION_WILL_FUND_FOR_FOOD=Feature.NOT_SET)
+
 Eclair = Heuristic("Eclair",
+                   OPTION_DATA_LOSS_PROTECT=Feature.SET,
+                   OPTION_STATIC_REMOTEKEY=Feature.OPTIONAL,
                    OPTION_SUPPORT_LARGE_CHANNEL=Feature.OPTIONAL,
                    OPTION_ANCHORS_ZERO_FEE_HTLC_TX=Feature.OPTIONAL,
-                   OPTION_DATA_LOSS_PROTECT=Feature.OPTIONAL)
+                   OPTION_WILL_FUND_FOR_FOOD=Feature.NOT_SET)
 
-LND = Heuristic("LND", OPTION_DATA_LOSS_PROTECT=Feature.MANDATORY)
+LND = Heuristic("LND",
+                OPTION_WILL_FUND_FOR_FOOD=Feature.OPTIONAL,
+                OPTION_DATA_LOSS_PROTECT=Feature.MANDATORY)
 
 CLN = Heuristic("CLN",
                 OPTION_DATA_LOSS_PROTECT=Feature.OPTIONAL,
-                OPTION_STATIC_REMOTEKEY=Feature.NOT_MANDATORY,
+                OPTION_UPFRONT_SHUTDOWN_SCRIPT=Feature.OPTIONAL,
+                OPTION_STATIC_REMOTEKEY=Feature.SET,
                 GOSSIP_QUERIES_EX=Feature.OPTIONAL,
-                KEYSEND=Feature.OPTIONAL)
+                KEYSEND=Feature.OPTIONAL,
+                OPTION_WILL_FUND_FOR_FOOD=Feature.NOT_SET)
 
 LDK = Heuristic("LDK",
-                VAR_ONION_OPTIN=Feature.MANDATORY)
+                OPTION_DATA_LOSS_PROTECT=Feature.MANDATORY,
+                VAR_ONION_OPTIN=Feature.MANDATORY,
+                OPTION_STATIC_REMOTEKEY=Feature.MANDATORY)
+
+Electrum = Heuristic("Electrum",
+                     OPTION_DATA_LOSS_PROTECT=Feature.OPTIONAL,
+                     OPTION_UPFRONT_SHUTDOWN_SCRIPT=Feature.NOT_SET,
+                     OPT_ZEROCONF=Feature.NOT_SET,
+                     OPTION_WILL_FUND_FOR_FOOD=Feature.NOT_SET)
+
 
 Unknown = Heuristic("2200",
                     VAR_ONION_OPTIN=Feature.OPTIONAL,
@@ -130,10 +155,10 @@ Unknown = Heuristic("2200",
 
 
 # heuristics should be ordered from most unique/restrictive features to least
-all_heuristics = [NO_ANYSEGWIT, CLN_DF_NEW, CLN_DF_OLD, Eclair, LND,
-                  CLN, LDK, Unknown]
+all_heuristics = [NO_ANYSEGWIT, LND, CLN_DF_NEW, CLN_DF_OLD, CLN_24_02, Eclair,
+                  CLN, LDK, Electrum, Unknown]
 
-heuristic_sets = {"CLN": [CLN_DF_NEW, CLN_DF_OLD, CLN],
+heuristic_sets = {"CLN": [CLN_DF_NEW, CLN_DF_OLD, CLN_24_02, CLN],
                   "Unknown": [NO_ANYSEGWIT, Unknown]}
 
 
