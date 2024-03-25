@@ -148,6 +148,9 @@ Electrum = Heuristic("Electrum",
                      OPT_ZEROCONF=Feature.NOT_SET,
                      OPTION_WILL_FUND_FOR_FOOD=Feature.NOT_SET)
 
+nlightning = Heuristic("nlightning",
+                       VAR_ONION_OPTIN=Feature.OPTIONAL,
+                       INITIAL_ROUTING_SYNC=Feature.MANDATORY)
 
 Unknown = Heuristic("2200",
                     VAR_ONION_OPTIN=Feature.OPTIONAL,
@@ -155,8 +158,8 @@ Unknown = Heuristic("2200",
 
 
 # heuristics should be ordered from most unique/restrictive features to least
-all_heuristics = [NO_ANYSEGWIT, LND, CLN_DF_NEW, CLN_DF_OLD, CLN_24_02, Eclair,
-                  CLN, LDK, Electrum, Unknown]
+all_heuristics = [nlightning, NO_ANYSEGWIT, LND, CLN_DF_NEW, CLN_DF_OLD,
+                  CLN_24_02, Eclair, CLN, LDK, Electrum, Unknown]
 
 heuristic_sets = {"CLN": [CLN_DF_NEW, CLN_DF_OLD, CLN_24_02, CLN],
                   "Unknown": [NO_ANYSEGWIT, Unknown]}
