@@ -110,7 +110,7 @@ CLN_DF_OLD = Heuristic("CLN Broken Dual-Fund",
 
 CLN_24_02 = Heuristic("CLN v24.02+",
                       OPTION_DATA_LOSS_PROTECT=Feature.MANDATORY,
-                      OPT_GOSSIP_QUERIES=Feature.MANDATORY,
+                      OPT_GOSSIP_QUERIES=Feature.SET,
                       OPTION_STATIC_REMOTEKEY=Feature.SET,
                       GOSSIP_QUERIES_EX=Feature.OPTIONAL,
                       KEYSEND=Feature.OPTIONAL,
