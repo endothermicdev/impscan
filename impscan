@@ -282,12 +282,11 @@ def full_scan() -> dict:
     tally = {}
     for heuristic in all_heuristics:
         tally.update({heuristic.name: 0})
-    tally.update({"indef": 0, "no features": 0, "total": len(nodes)})
+    tally.update({"indef": 0, "no features": 0, "total": 0})
     indefs = []
 
     for node in nodes:
         if "features" not in node:
-            tally["no features"] += 1
             continue
         if node["features"] is None or node["features"] == '':
             tally["no features"] += 1
@@ -296,6 +295,7 @@ def full_scan() -> dict:
         if fingerprint == "indef":
             indefs.append(node)
         tally[fingerprint] += 1
+        tally["total"] += 1
 
     categorized_tally = {}
     for cat, heuristics in heuristic_sets.items():
