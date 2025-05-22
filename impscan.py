@@ -118,6 +118,18 @@ CLN_24_02 = Heuristic("CLN v24.02+",
                       OPTION_ROUTE_BLINDING=Feature.OPTIONAL,
                       OPTION_WILL_FUND_FOR_FOOD=Feature.NOT_SET)
 
+CLN_25_05 = Heuristic("CLN v25.05+",
+                      OPTION_DATA_LOSS_PROTECT=Feature.MANDATORY,
+                      OPT_GOSSIP_QUERIES=Feature.SET,
+                      OPTION_STATIC_REMOTEKEY=Feature.SET,
+                      GOSSIP_QUERIES_EX=Feature.OPTIONAL,
+                      KEYSEND=Feature.OPTIONAL,
+                      OPTION_ANCHORS_ZERO_FEE_HTLC_TX=Feature.OPTIONAL,
+                      OPTION_ROUTE_BLINDING=Feature.OPTIONAL,
+                      OPTION_WILL_FUND_FOR_FOOD=Feature.NOT_SET,
+                      CLN_WANT_PEER_STORAGE=Feature.NOT_SET,
+                      CLN_PROVIDE_PEER_STORAGE=Feature.OPTIONAL)
+
 Eclair = Heuristic("Eclair",
                    OPTION_DATA_LOSS_PROTECT=Feature.SET,
                    OPTION_STATIC_REMOTEKEY=Feature.OPTIONAL,
@@ -159,9 +171,9 @@ Unknown = Heuristic("2200",
 
 # heuristics should be ordered from most unique/restrictive features to least
 all_heuristics = [nlightning, NO_ANYSEGWIT, LND, CLN_DF_NEW, CLN_DF_OLD,
-                  CLN_24_02, Eclair, CLN, LDK, Electrum, Unknown]
+                  CLN_25_05, CLN_24_02, Eclair, CLN, LDK, Electrum, Unknown]
 
-heuristic_sets = {"CLN": [CLN_DF_NEW, CLN_DF_OLD, CLN_24_02, CLN],
+heuristic_sets = {"CLN": [CLN_DF_NEW, CLN_DF_OLD, CLN_24_02, CLN_25_05, CLN],
                   "Unknown": [NO_ANYSEGWIT, Unknown]}
 
 
